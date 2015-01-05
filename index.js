@@ -25,7 +25,7 @@ module.exports = mixin(
         },
 
         // override this to customize view
-        onMissing: function(path) {
+        onContentMissing: function(path) {
             var module = {};
             module[MODULE_VIEW] = '<h1>Page not found</h1><h2>' + path + '</h2>';
             module[this.USE_LAYOUT] = false;
@@ -93,28 +93,31 @@ module.exports = mixin(
             var self = this;
             var parentDir = '';
             var ret = [];
-            path.split('/').slice(0, -1).forEach(function(dirname) {                
-                try {
-                    parentDir += (parentDir ? '/' : '') + dirname;
-                    var LayoutClass = self.getModuleClass(parentDir + '/' + self.LAYOUT_FILE_NAME);
+            path.split('/').slice(0, -1).forEach(function(dirname) {   
+                parentDir += (parentDir ? '/' : '') + dirname;
+                var LayoutClass = self.getModuleClass(parentDir + '/' + self.LAYOUT_FILE_NAME);
+                if (LayoutClass) {
                     ret.push(LayoutClass);
-                } catch (e) {
-                    // has no layout
                 }
             }, []);
             return ret;
         },
 
-        getContentClass: function(path) {
-            try {
-                return this.getModuleClass(path);
-            } catch (e) {
-                return this.onMissing(path);
-            }
+        getContentClass: function(path) {     
+            return this.getModuleClass(path) || this.onContentMissing(path);
         },
 
+        // when not found module, just return undefined
         getModuleClass: function(path) {
-            return require(this.MODULE_PATH + '/' + path);
+            var modulePath = this.MODULE_PATH + '/' + path;
+            try {
+                return require(modulePath);
+            } catch (e) {
+                // not (not found error), pass it to caller
+                if (e.message.indexOf('\'' + modulePath + '\'') === -1) {
+                    throw e;
+                }
+            }
         }
     }
 )
