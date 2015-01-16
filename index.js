@@ -1,23 +1,32 @@
 var mixin = require('mixin-class');
 var ko = require('knockout');
+var _ = require('lodash');
+
+var LAYOUT_FILE_NAME = '__layout';
 
 var MODULE_CHILDREN = '__children';
 var MODULE_ACTIVE = '__active';
 var MODULE_VIEW = '__view';
 var MODULE_PATH = '__path';
 
+var CONTENT_PLACEHOLDER = '{{content}}';
+var ACTIVE_PLACEHOLDER = '{{active}}';
+var USE_LAYOUT_PROP = 'useLayout';
+
 module.exports = mixin(
-    function() {
+    function(options) {
         this._rootModule = {};
         this._rootModule[MODULE_CHILDREN] = ko.observableArray(); 
 
         this._modules = {};
+
+        this.options = _.extend({}, this.options, options);
     },
     {
-        MODULE_PATH: 'module/page',
-        USE_LAYOUT: 'useLayout',
-        LAYOUT_FILE_NAME: '__layout',
-        LAYOUT_CONTENT_PLACEHOLDER: '{{content}}',
+        options: {
+            moduleRootPath: 'module/page',
+            moduleViewTemplate: '<!-- ko if:' + ACTIVE_PLACEHOLDER + ' -->' + CONTENT_PLACEHOLDER + '<!-- /ko -->'
+        },
 
         // override this to customize instantiation
         instantiateModule: function(Class) {
@@ -28,7 +37,7 @@ module.exports = mixin(
         onContentMissing: function(path) {
             var module = {};
             module[MODULE_VIEW] = '<h1>Page not found</h1><h2>' + path + '</h2>';
-            module[this.USE_LAYOUT] = false;
+            module[USE_LAYOUT_PROP] = false;
             return mixin(module);
         },
 
@@ -58,7 +67,7 @@ module.exports = mixin(
         buildModule: function(path) {
             var ModuleClass = this.getContentClass(path);
 
-            if (ModuleClass.prototype[this.USE_LAYOUT] !== false) {
+            if (ModuleClass.prototype[USE_LAYOUT_PROP] !== false) {
                 ModuleClass = this.applyLayoutClasses(ModuleClass, this.getLayoutClasses(path))
             }
 
@@ -74,17 +83,15 @@ module.exports = mixin(
                 this[MODULE_ACTIVE] = ko.observable(true);
             });
 
-            ModuleClass.prototype[MODULE_VIEW] = '<div data-bind="visible:' + MODULE_ACTIVE + '">' + ModuleClass.prototype[MODULE_VIEW] + '</div>';
+            ModuleClass.prototype[MODULE_VIEW] = this.options.moduleViewTemplate.replace(CONTENT_PLACEHOLDER, ModuleClass.prototype[MODULE_VIEW]).replace(ACTIVE_PLACEHOLDER, MODULE_ACTIVE);
 
             return ModuleClass;
         },
 
         applyLayoutClasses: function(Class, LayoutClasses) {
-            var LAYOUT_CONTENT_PLACEHOLDER = this.LAYOUT_CONTENT_PLACEHOLDER;
-
             return LayoutClasses.reverse().reduce(function(Class, LayoutClass) {
                 var o = {};
-                o[MODULE_VIEW] = LayoutClass.prototype[MODULE_VIEW].replace(LAYOUT_CONTENT_PLACEHOLDER, Class.prototype[MODULE_VIEW])
+                o[MODULE_VIEW] = LayoutClass.prototype[MODULE_VIEW].replace(CONTENT_PLACEHOLDER, Class.prototype[MODULE_VIEW])
                 return mixin(LayoutClass, Class, o);
             }, Class)
         },
@@ -95,7 +102,7 @@ module.exports = mixin(
             var ret = [];
             path.split('/').slice(0, -1).forEach(function(dirname) {   
                 parentDir += (parentDir ? '/' : '') + dirname;
-                var LayoutClass = self.getModuleClass(parentDir + '/' + self.LAYOUT_FILE_NAME);
+                var LayoutClass = self.getModuleClass(parentDir + '/' + LAYOUT_FILE_NAME);
                 if (LayoutClass) {
                     ret.push(LayoutClass);
                 }
@@ -109,7 +116,7 @@ module.exports = mixin(
 
         // when not found module, just return undefined
         getModuleClass: function(path) {
-            var modulePath = this.MODULE_PATH + '/' + path;
+            var modulePath = this.options.moduleRootPath + '/' + path;
             try {
                 return require(modulePath);
             } catch (e) {
