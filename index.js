@@ -46,7 +46,7 @@ module.exports = mixin(
             ko.applyBindings(this._rootModule, el);
         },
 
-        active: function(path, callback) {  
+        activate: function(path, callback) {  
             var currentModule = this._modules[path];
             if (!currentModule) {
                 currentModule = this._modules[path] = this.buildModule(path);
