@@ -13,6 +13,10 @@ var CONTENT_PLACEHOLDER = '{{content}}';
 var ACTIVE_PLACEHOLDER = '{{active}}';
 var USE_LAYOUT_PROP = 'useLayout';
 
+var normalizePath = function(path) {
+    return path.replace(/^\//, '').replace(/\/$/, '')
+};
+
 module.exports = mixin(
     function(options) {
         this._rootModule = {};
@@ -47,6 +51,8 @@ module.exports = mixin(
         },
 
         activate: function(path, callback) {  
+            path = normalizePath(path);
+
             var currentModule = this._modules[path];
             if (!currentModule) {
                 currentModule = this._modules[path] = this.buildModule(path);
