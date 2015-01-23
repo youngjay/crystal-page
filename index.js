@@ -28,7 +28,7 @@ module.exports = mixin(
     },
     {
         options: {
-            moduleRootPath: 'module/page',
+            moduleRootPath: 'module',
             moduleViewTemplate: '<!-- ko if:' + ACTIVE_PLACEHOLDER + ' -->' + CONTENT_PLACEHOLDER + '<!-- /ko -->'
         },
 
@@ -102,18 +102,26 @@ module.exports = mixin(
             }, Class)
         },
 
+        getAncestorPathes: function(path) {
+            return path.split('/').map(function(_, i, arr) {
+                return arr.slice(0, i + 1).join('/')
+            })
+        },
+
         getLayoutClasses: function(path) {
+            var ancestorPathes = this.getAncestorPathes(path).slice(0, -1).map(function(dir) {
+                return dir + '/' + LAYOUT_FILE_NAME;
+            });
+            ancestorPathes.unshift(LAYOUT_FILE_NAME);
             var self = this;
-            var parentDir = '';
-            var ret = [];
-            path.split('/').slice(0, -1).forEach(function(dirname) {   
-                parentDir += (parentDir ? '/' : '') + dirname;
-                var LayoutClass = self.getModuleClass(parentDir + '/' + LAYOUT_FILE_NAME);
+            var layoutClasses = [];
+            ancestorPathes.forEach(function(path) {
+                var LayoutClass = self.getModuleClass(path);
                 if (LayoutClass) {
-                    ret.push(LayoutClass);
+                    layoutClasses.push(LayoutClass);
                 }
-            }, []);
-            return ret;
+            });
+            return layoutClasses;
         },
 
         getContentClass: function(path) {     
