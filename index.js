@@ -28,6 +28,7 @@ module.exports = mixin(
     },
     {
         options: {
+            container: document.body,
             moduleRootPath: 'module',
             moduleViewTemplate: '<!-- ko if:' + ACTIVE_PLACEHOLDER + ' -->' + CONTENT_PLACEHOLDER + '<!-- /ko -->'
         },
@@ -45,7 +46,8 @@ module.exports = mixin(
             return mixin(module);
         },
 
-        render: function(el) {
+        render: function() {
+            var el = this.options.container;
             el.innerHTML = '<!-- ko template: { foreach: ' + MODULE_CHILDREN + ', name: function(child) { return child.' + MODULE_VIEW + ' }} --><!-- /ko -->';
             ko.applyBindings(this._rootModule, el);
         },
