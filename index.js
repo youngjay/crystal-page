@@ -40,7 +40,7 @@ module.exports = mixin(
         // override this to customize view
         onContentMissing: function(path) {
             var module = {};
-            module[MODULE_VIEW] = '<h1>Page not found</h1><h2>' + path + '</h2>';
+            module[MODULE_VIEW] = '<h1>Page not found</h1>';
             module[USE_LAYOUT_PROP] = false;
             return mixin(module);
         },
