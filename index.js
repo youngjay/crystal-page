@@ -25,6 +25,7 @@ module.exports = mixin(
         this._modules = {};
 
         this.options = _.extend({}, this.options, options);
+        this.render();
     },
     {
         options: {
@@ -52,7 +53,8 @@ module.exports = mixin(
             ko.applyBindings(this._rootModule, el);
         },
 
-        activate: function(path, callback) {  
+        activate: function(path) {    
+
             path = normalizePath(path);
 
             var currentModule = this._modules[path];
@@ -67,9 +69,8 @@ module.exports = mixin(
 
             currentModule[MODULE_ACTIVE](true);
 
-            callback(currentModule);
-
             this._lastActivatedModule = currentModule;
+            return currentModule;
         },
 
         buildModule: function(path) {
