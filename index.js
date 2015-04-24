@@ -17,10 +17,11 @@ var normalizePath = function(path) {
     return path.replace(/^\//, '').replace(/\/$/, '')
 };
 
+var noop = function() {};
+
 module.exports = mixin(
     function(options) {
-        this._rootModule = {};
-        this._rootModule[MODULE_CHILDREN] = ko.observableArray(); 
+        this._rootModule = this.buildRootModule();
 
         this._modules = {};
 
@@ -31,7 +32,7 @@ module.exports = mixin(
         options: {
             container: document.body,
             moduleRootPath: 'module',
-            moduleViewTemplate: '<!-- ko if:' + ACTIVE_PLACEHOLDER + ' -->' + CONTENT_PLACEHOLDER + '<!-- /ko -->'
+            moduleViewTemplate: '<!-- ko template: { if:' + ACTIVE_PLACEHOLDER + ', afterRender: afterRender } -->' + CONTENT_PLACEHOLDER + '<!-- /ko -->'
         },
 
         // override this to customize instantiation
@@ -47,9 +48,17 @@ module.exports = mixin(
             return mixin(module);
         },
 
+        buildRootModule: function() {
+            var rootModule = {};
+
+            rootModule[MODULE_CHILDREN] = ko.observableArray();
+
+            return rootModule;
+        },
+
         render: function() {
             var el = this.options.container;
-            el.innerHTML = '<!-- ko template: { foreach: ' + MODULE_CHILDREN + ', name: function(child) { return child.' + MODULE_VIEW + ' }} --><!-- /ko -->';
+            el.innerHTML = '<!-- ko template: { foreach: ' + MODULE_CHILDREN + ', name: function(child) { return child.' + MODULE_VIEW + ' } } --><!-- /ko -->';
             ko.applyBindings(this._rootModule, el);
         },
 
@@ -64,12 +73,13 @@ module.exports = mixin(
             }
 
             if (this._lastActivatedModule && this._lastActivatedModule !== currentModule) {
-                this._lastActivatedModule[MODULE_ACTIVE](false);
+                this._lastActivatedModule[MODULE_ACTIVE](false);             
             }
 
             currentModule[MODULE_ACTIVE](true);
 
             this._lastActivatedModule = currentModule;
+          
             return currentModule;
         },
 
@@ -83,6 +93,10 @@ module.exports = mixin(
             ModuleClass = this.addActiveControl(ModuleClass);
         
             ModuleClass.prototype[MODULE_PATH] = path;
+
+            if (!ModuleClass.prototype.afterRender) {
+                ModuleClass.prototype.afterRender = noop;
+            }
 
             return this.instantiateModule(ModuleClass);
         },
